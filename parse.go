@@ -1,9 +1,9 @@
-package main
+package gostatic
 
 import (
   "bytes"
   "fmt"
-  // "io"
+  "io"
   "launchpad.net/goyaml"
   "log"
   "os"
@@ -12,6 +12,7 @@ import (
 )
 
 var headerRe = regexp.MustCompile("-+")
+var linkRe = regexp.MustCompile("[[(\\w+)}}")
 
 type Metadata struct {
   Title    string
@@ -33,8 +34,9 @@ func metadataForBuffer(buf *bytes.Buffer) (m *Metadata) {
   }
 
   var (
-    l    []byte
-    yaml bytes.Buffer
+    l       []byte
+    yaml    bytes.Buffer
+    content bytes.Buffer
   )
 
   for !headerRe.Match(l) {
@@ -43,12 +45,26 @@ func metadataForBuffer(buf *bytes.Buffer) (m *Metadata) {
     }
     yaml.Write(l)
   }
+  fmt.Println("Done parsing header.")
+
+  fmt.Println("Parsing content.")
+  for err != io.EOF {
+    // Read word by word.
+    l, err = buf.ReadBytes(' ')
+    begin := bytes.IndexRune(l, '[')
+    end := bytes.IndexRune(l, ']')
+    if begin >= 0 && end >= 0 {
+      link := l[begin:end]
+      fmt.Println("Link discovered:", link)
+    }
+    content.Write(l)
+  }
 
   goyaml.Unmarshal(yaml.Bytes(), &m)
   return
 }
 
-func main() {
+func main__() {
   filename := "test.md"
   f, err := os.Open(filename)
   if err != nil {
@@ -64,6 +80,5 @@ func main() {
 
   m := metadataForBuffer(buf)
   fmt.Println("Metadata:", m)
-
 
 }
