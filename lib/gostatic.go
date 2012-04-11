@@ -83,13 +83,19 @@ func lexHeader(l *lexer) stateFn {
 func lexValue(l *lexer) stateFn {
   for {
     switch r := l.next(); {
-    case isSpace(r):
+    case r == ' ':
+      fmt.Println("ignoring space")
       l.ignore()
     default:
+      fmt.Println("is not space")
       switch r {
-      case ' ', '\r', '\n':
+      case '\n':
+        fmt.Println("newline")
+        l.backup()
         l.emit(itemValue)
-        return lexContent
+        l.next()
+        l.ignore()
+        return lexHeader
       }
     case r == eof:
       return l.errorf("Reached eof while trying to parse a header value")

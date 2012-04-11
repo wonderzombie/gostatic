@@ -74,9 +74,9 @@ func (l *lexer) ignore() {
   l.start = l.pos
 }
 
-// func (l *lexer) backup() {
-//   l.pos -= l.width
-// }
+func (l *lexer) backup() {
+  l.pos -= l.width
+}
 
 // func (l *lexer) peek() int {
 //     rune := l.next()
