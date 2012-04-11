@@ -58,14 +58,14 @@ func (l *lexer) emit(t itemType) {
   l.start = l.pos
 }
 
-func (l *lexer) next() (rune int) {
+func (l *lexer) next() (r rune) {
   if l.pos >= len(l.input) {
     l.width = 0
     return eof
   }
-  rune, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
+  r, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
   l.pos += l.width
-  return rune
+  return r
 }
 
 // func (l *lexer) ignore() {

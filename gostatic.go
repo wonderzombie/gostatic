@@ -1,6 +1,9 @@
 package gostatic
 
 import (
+  "io/ioutil"
+  "log"
+  "os"
   "strings"
 )
 
@@ -39,9 +42,10 @@ func lexContent(l *lexer) stateFn {
     switch r := l.next(); {
     case r == eof:
       l.emit(itemContent)
-      return lexDocument
+      break
     }
   }
+  return nil
 }
 
 func lexHeader(l *lexer) stateFn {
@@ -60,6 +64,7 @@ func lexHeader(l *lexer) stateFn {
       return l.errorf("Never found end of header (%v).", headerDelim)
     }
   }
+  return nil
 }
 
 func lexValue(l *lexer) stateFn {
@@ -75,8 +80,21 @@ func lexValue(l *lexer) stateFn {
       return l.errorf("Reached eof while trying to parse a header value")
     }
   }
+  return nil
 }
 
-func main() {
-
+func ParseArticle(filename string) (c chan item) {
+  f, err := os.Open(filename)
+  if err != nil {
+    log.Fatalf("Unable to open file %v: %v\n", f, err)
+  }
+  in, err := ioutil.ReadAll(f)
+  if err != nil {
+    log.Fatalf("Error while reading file %v: %v\n", f, err)
+  }
+  l := lex("test", string(in))
+  go func() {
+    c <- l.nextItem()
+  }()
+  return c
 }
