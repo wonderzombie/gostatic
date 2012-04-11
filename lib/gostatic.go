@@ -1,6 +1,7 @@
 package gostatic
 
 import (
+  "fmt"
   "io/ioutil"
   "log"
   "os"
@@ -25,10 +26,22 @@ var itemName = map[itemType]string{
   itemContent: "content",
 }
 
+func (i item) String() string {
+  switch i.typ {
+  case itemEOF:
+    return "EOF"
+  case itemError:
+    return i.val
+  }
+  return fmt.Sprintf("%q: %q", itemName[i.typ], i.val)
+}
+
 const headerDelim = "---"
 
 func lexDocument(l *lexer) stateFn {
   if strings.HasPrefix(l.input[l.pos:], headerDelim) {
+    l.pos += len(headerDelim)
+    l.emit(itemHeader)
     return lexHeader
   } else {
     return l.errorf("File must begin with a header (%v).", headerDelim)
@@ -42,7 +55,7 @@ func lexContent(l *lexer) stateFn {
     switch r := l.next(); {
     case r == eof:
       l.emit(itemContent)
-      break
+      return l.errorf("done")
     }
   }
   return nil
@@ -70,6 +83,8 @@ func lexHeader(l *lexer) stateFn {
 func lexValue(l *lexer) stateFn {
   for {
     switch r := l.next(); {
+    case isSpace(r):
+      l.ignore()
     default:
       switch r {
       case ' ', '\r', '\n':
@@ -83,7 +98,7 @@ func lexValue(l *lexer) stateFn {
   return nil
 }
 
-func ParseArticle(filename string) (c chan item) {
+func ParseArticle(filename string) []item {
   f, err := os.Open(filename)
   if err != nil {
     log.Fatalf("Unable to open file %v: %v\n", f, err)
@@ -93,8 +108,11 @@ func ParseArticle(filename string) (c chan item) {
     log.Fatalf("Error while reading file %v: %v\n", f, err)
   }
   l := lex("test", string(in))
-  go func() {
-    c <- l.nextItem()
-  }()
-  return c
+  items := make([]item, 0)
+  i := l.NextItem()
+  for i.typ != itemEOF {
+    items = append(items, i)
+    i = l.NextItem()
+  }
+  return items
 }

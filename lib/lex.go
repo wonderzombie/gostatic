@@ -41,7 +41,7 @@ func lex(name, input string) *lexer {
 }
 
 // nextItem returns the next item from the input.
-func (l *lexer) nextItem() item {
+func (l *lexer) NextItem() item {
   for {
     select {
     case item := <-l.items:
@@ -54,7 +54,9 @@ func (l *lexer) nextItem() item {
 }
 
 func (l *lexer) emit(t itemType) {
-  l.items <- item{t, l.input[l.start:l.pos]}
+  i := item{t, l.input[l.start:l.pos]}
+  fmt.Println("Emitting ", i)
+  l.items <- i
   l.start = l.pos
 }
 
@@ -68,9 +70,9 @@ func (l *lexer) next() (r rune) {
   return r
 }
 
-// func (l *lexer) ignore() {
-//   l.start = l.pos
-// }
+func (l *lexer) ignore() {
+  l.start = l.pos
+}
 
 // func (l *lexer) backup() {
 //   l.pos -= l.width
@@ -110,13 +112,13 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
   return nil
 }
 
-// func isSpace(r rune) bool {
-//   switch r {
-//   case ' ', '\t', '\n', '\r':
-//     return true
-//   }
-//   return false
-// }
+func isSpace(r rune) bool {
+  switch r {
+  case ' ', '\t', '\n', '\r':
+    return true
+  }
+  return false
+}
 
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
 func isAlphaNumeric(r rune) bool {
