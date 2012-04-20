@@ -35,14 +35,9 @@ func ParseMetadata(p *parser.Parser) (m *Metadata) {
     log.Println("Warning: file had no header. Assuming no metadata.")
     return
   }
+
   m = new(Metadata)
-
-  l, err = p.ReadLine()
-  if err != nil {
-    log.Fatalf("Error while reading file:", err)
-  }
-
-  for err == nil {
+  for l, err = p.ReadLine(); err == nil; l, err = p.ReadLine() {
     if strings.HasPrefix(l, header) {
       // Done parsing metadata.
       return
@@ -70,8 +65,6 @@ func ParseMetadata(p *parser.Parser) (m *Metadata) {
     default:
       log.Println("Ignoring line:", l)
     }
-
-    l, err = p.ReadLine()
   }
 
   if err != nil {
@@ -84,10 +77,8 @@ func ParseMetadata(p *parser.Parser) (m *Metadata) {
 func ParseContent(p *parser.Parser) (content string) {
   c := make([]string, 0)
 
-  l, err := p.ReadLine()
-  for err == nil {
+  for l, err := p.ReadLine(); err == nil; l, err = p.ReadLine() {
     c = append(c, l)
-    l, err = p.ReadLine()
   }
 
   content = strings.Join(c, "\n")
