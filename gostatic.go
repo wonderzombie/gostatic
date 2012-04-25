@@ -142,6 +142,33 @@ func ListFiles(dir string) (infos []MkdFileInfo, misc []ContentFileInfo, err err
   return
 }
 
+func CopyFile(srcPath, dstPath string) error {
+  // TODO: just return error, OK? And maybe wrap it with our own message.
+  f, err := os.Open(srcPath)
+  if err != nil {
+    log.Printf("Unable to open file %v for reading: %v\n", srcPath, err)
+    return err
+  }
+  defer f.Close()
+
+  out, err := os.Create(dstPath)
+  if err != nil {
+    log.Printf("Unable to create file %v for copying: %v\n", dstPath, err)
+    return err
+  }
+  defer out.Close()
+
+  _, err = io.Copy(out, f)
+  if err != nil {
+    log.Printf("Unable to copy file %v to destination %v: %v\n", srcPath, dstPath, err)
+    return err
+  }
+
+  f.Close()
+  out.Close()
+  return nil
+}
+
 func main() {
   // TODO: parameterize _pages, _site, et al?
   infos, content, err := ListFiles("_pages")
@@ -211,29 +238,13 @@ func main() {
   // Finally, copy all the other files.
   for _, c := range content {
     miscFile := string(c)
-    f, err := os.Open(miscFile)
-    if err != nil {
-      log.Printf("Unable to open file %v for reading: %v\n", miscFile, err)
-      continue
-    }
-    defer f.Close()
-
     newPath := strings.Replace(miscFile, "_pages", "_site", 1)
-    out, err := os.Create(newPath)
-    if err != nil {
-      log.Printf("Unable to create file %v for copying: %v\n", newPath, err)
-      continue
-    }
-    defer out.Close()
 
-    _, err = io.Copy(out, f)
+    err = CopyFile(miscFile, newPath)
     if err != nil {
-      log.Printf("Unable to copy file %v to destination %v: %v\n", miscFile, newPath, err)
-      continue
+      // TODO: probably redundant.
+      log.Println("Error while trying to copy file %v to %v: %v", miscFile, newPath, err)
     }
-
-    f.Close()
-    out.Close()
   }
 
 }
