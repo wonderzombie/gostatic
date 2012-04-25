@@ -22,6 +22,11 @@ type Metadata struct {
   Tags     []string
 }
 
+func (m *Metadata) String() string {
+  tt := strings.Join(m.Tags, "|")
+  return fmt.Sprintf("Title: %v, Category: %v, Tags: %v", m.Title, m.Category, tt)
+}
+
 // TODO: this seems like a grab bag of data.
 type MkdFileInfo struct {
   Content  string
@@ -35,10 +40,7 @@ func (m *MkdFileInfo) String() string {
   return out
 }
 
-func (m *Metadata) String() string {
-  tt := strings.Join(m.Tags, "|")
-  return fmt.Sprintf("Title: %v, Category: %v, Tags: %v", m.Title, m.Category, tt)
-}
+type ContentFileInfo string
 
 func ParseMetadata(p *parser.Parser) (m *Metadata) {
   l, err := p.ReadLine()
@@ -114,33 +116,35 @@ func ReadFile(f *os.File) (m *Metadata, content string) {
   return
 }
 
-func ListFiles(dir string) ([]*MkdFileInfo, error) {
-  var infos []*MkdFileInfo
+func ListFiles(dir string) (infos []MkdFileInfo, misc []ContentFileInfo, err error) {
   wf := func(path string, info os.FileInfo, err error) error {
     // TODO: do more to separate out files by extension or type. Return those separately.
     if info.IsDir() {
       return nil
     }
+    if !strings.HasSuffix(path, ".md") {
+      misc = append(misc, ContentFileInfo(path))
+      return nil
+    }
 
-    i := new(MkdFileInfo)
+    i := MkdFileInfo{}
     i.OsInfo = info
     i.Path = path
     infos = append(infos, i)
     return nil
   }
 
-  err := filepath.Walk(dir, wf)
+  err = filepath.Walk(dir, wf)
   if err != nil {
     log.Fatalf("Error while reading %v: %v\n", dir, err)
-    return nil, err
   }
 
-  return infos, nil
+  return
 }
 
 func main() {
   // TODO: parameterize _pages, _site, et al?
-  infos, err := ListFiles("_pages")
+  infos, content, err := ListFiles("_pages")
   if err != nil {
     log.Fatalf("Error while listing files: %v\n", err)
     return
@@ -151,14 +155,7 @@ func main() {
     return
   }
 
-  var toCopy []string
   for _, info := range infos {
-    // TODO: fix this when we sort out what to do with ListFiles().
-    if !strings.HasSuffix(info.OsInfo.Name(), ".md") {
-      toCopy = append(toCopy, info.Path)
-      continue
-    }
-
     f, err := os.Open(info.Path)
     if err != nil {
       log.Printf("Skipping file %v because of an error: %v", info.Path, err)
@@ -183,11 +180,6 @@ func main() {
 
   // Process all of the md files and make them into html. Create dir structure.
   for _, info := range infos {
-    // TODO: fix this when we sort out what to do with ListFiles().
-    if !strings.HasSuffix(info.OsInfo.Name(), ".md") {
-      continue
-    }
-
     // TODO: refactor this chunk into its own func.
     newPath := strings.Replace(info.Path, "_pages", "_site", 1)
     dir, file := filepath.Split(newPath)
@@ -217,7 +209,8 @@ func main() {
   }
 
   // Finally, copy all the other files.
-  for _, miscFile := range toCopy {
+  for _, c := range content {
+    miscFile := string(c)
     f, err := os.Open(miscFile)
     if err != nil {
       log.Printf("Unable to open file %v for reading: %v\n", miscFile, err)
