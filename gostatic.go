@@ -169,6 +169,18 @@ func CopyFile(srcPath, dstPath string) error {
   return nil
 }
 
+func ReplaceExt(file, ext string) string {
+  tokens := strings.Split(file, ".")
+  if len(tokens) == 1 {
+    return file
+  }
+
+  i := len(tokens) - 1
+  tokens[i] = ext
+
+  return strings.Join(tokens, ".")
+}
+
 func main() {
   // TODO: parameterize _pages, _site, et al?
   infos, content, err := ListFiles("_pages")
@@ -211,10 +223,7 @@ func main() {
     newPath := strings.Replace(info.Path, "_pages", "_site", 1)
     dir, file := filepath.Split(newPath)
 
-    // TODO: this is broken. Probably we should split on "." and replace
-    // the last element with "html" directly.
-    ext := filepath.Ext(file)
-    file = strings.Replace(file, ext, ".html", 1)
+    file = ReplaceExt(file, "html")
     newPath = filepath.Join(dir, file)
     log.Printf("%v -> %v", info.Path, newPath)
 
