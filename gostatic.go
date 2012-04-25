@@ -118,7 +118,6 @@ func ReadFile(f *os.File) (m *Metadata, content string) {
 
 func ListFiles(dir string) (infos []MkdFileInfo, misc []ContentFileInfo, err error) {
   wf := func(path string, info os.FileInfo, err error) error {
-    // TODO: do more to separate out files by extension or type. Return those separately.
     if info.IsDir() {
       return nil
     }
@@ -182,6 +181,8 @@ func ReplaceExt(file, ext string) string {
 }
 
 func main() {
+  // TODO: don't do all this work in main.
+  // TODO: command line args.
   // TODO: parameterize _pages, _site, et al?
   infos, content, err := ListFiles("_pages")
   if err != nil {
